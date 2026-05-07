@@ -1,6 +1,6 @@
-// OotleSwap frontend — talks to the user, not the chain.
-// All AMM math is computed locally; the user submits transactions via the
-// Tari Wallet UI's manifest editor.
+// OotleSwap frontend — live data from the public Esmeralda indexer.
+// All AMM math is computed locally in BigInt; the user submits transactions
+// via the Tari Wallet UI's manifest editor.
 
 // ---- Live deployment (Esmeralda v0.2.0) ----
 const ADDRS = {
@@ -18,26 +18,190 @@ const ADDRS = {
 const INDEXER_URL = "https://ootle-indexer-a.tari.com";
 const FEE_NUM = 997n;
 const FEE_DEN = 1000n;
-const MICRO = 1_000_000n; // divisibility 6
+const MICRO = 1_000_000n;
 
-// ---- DOM helpers ----
+// CBOR-style tag prefixes used by the indexer's substate JSON.
+const TAG_RESOURCE = 131;
+const TAG_VAULT = 132;
+
 const $ = (sel) => document.querySelector(sel);
 
-// ---- Render addresses with copy-on-click ----
+// ---- Substate helpers ----
+
+async function fetchSubstate(addr) {
+  const res = await fetch(`${INDEXER_URL}/substates/${addr}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${addr}`);
+  return res.json();
+}
+
+function bytesToAddress(bytes, prefix) {
+  return `${prefix}_${bytes.map(b => b.toString(16).padStart(2, "0")).join("")}`;
+}
+
+// In the indexer JSON, untagged pieces of state appear as
+// { "Tag": [N, { "Bytes": [...] }] } where N tells you the entity type.
+function parseTagged(node) {
+  if (!node || typeof node !== "object") return null;
+  if (!Array.isArray(node.Tag)) return null;
+  const [tagNum, payload] = node.Tag;
+  const bytes = payload?.Bytes;
+  if (!Array.isArray(bytes)) return null;
+  const prefix =
+    tagNum === TAG_RESOURCE ? "resource" :
+    tagNum === TAG_VAULT    ? "vault" :
+    null;
+  if (!prefix) return null;
+  return bytesToAddress(bytes, prefix);
+}
+
+// u128 fields show as { "Array": [{ "Integer": lo }, { "Integer": hi }] }
+function parseU128(node) {
+  if (!node?.Array || node.Array.length !== 2) return 0n;
+  const lo = BigInt(node.Array[0]?.Integer ?? 0);
+  const hi = BigInt(node.Array[1]?.Integer ?? 0);
+  return lo + (hi << 64n);
+}
+
+// Walk a "Map" node ([[{Text:k}, v], ...]) into a plain JS object.
+function mapToObj(mapNode) {
+  if (!Array.isArray(mapNode?.Map)) return {};
+  const out = {};
+  for (const [k, v] of mapNode.Map) {
+    const key = k?.Text;
+    if (key) out[key] = v;
+  }
+  return out;
+}
+
+// ---- Pool / vault read ----
+
+async function readPoolState() {
+  const poolSub = await fetchSubstate(ADDRS.POOL_COMPONENT);
+  const state = mapToObj(poolSub.substate.Component.body.state);
+  const vaultA = parseTagged(state.vault_a);
+  const vaultB = parseTagged(state.vault_b);
+  const lpResource = parseTagged(state.lp_resource);
+  const lpTotalSupply = parseU128(state.lp_total_supply);
+
+  if (!vaultA || !vaultB) {
+    throw new Error("could not extract vault addresses from pool state");
+  }
+
+  // Resolve each vault to its current balance + resource.
+  const [aSub, bSub] = await Promise.all([
+    fetchSubstate(vaultA),
+    fetchSubstate(vaultB),
+  ]);
+  const a = readVaultBalance(aSub);
+  const b = readVaultBalance(bSub);
+
+  return {
+    reserveA: a.amount,
+    reserveB: b.amount,
+    resourceA: a.address,
+    resourceB: b.address,
+    lpResource,
+    lpTotalSupply,
+  };
+}
+
+// Vaults can hold Fungible (cleartext .amount) or Stealth (.revealed_amount,
+// which is what the AMM operates on for tTARI). Confidential / NonFungible
+// would need different handling.
+function readVaultBalance(vaultSub) {
+  const container = vaultSub?.substate?.Vault?.resource_container ?? {};
+  if (container.Fungible) {
+    return {
+      amount: BigInt(container.Fungible.amount ?? 0),
+      address: ensureResourcePrefix(container.Fungible.address),
+    };
+  }
+  if (container.Stealth) {
+    return {
+      amount: BigInt(container.Stealth.revealed_amount ?? 0),
+      address: ensureResourcePrefix(container.Stealth.address),
+    };
+  }
+  throw new Error(
+    `Unsupported vault resource_container shape: ${Object.keys(container).join(",") || "<empty>"}`
+  );
+}
+
+function ensureResourcePrefix(addr) {
+  return addr?.startsWith("resource_") ? addr : `resource_${addr}`;
+}
+
+async function readRegistry() {
+  const sub = await fetchSubstate(ADDRS.FACTORY_COMPONENT);
+  const state = mapToObj(sub.substate.Component.body.state);
+  const poolsArr = state.pools?.Array ?? [];
+  return poolsArr.map(entry => {
+    const obj = mapToObj(entry);
+    return {
+      resource_a: parseTagged(obj.resource_a),
+      resource_b: parseTagged(obj.resource_b),
+      component: parseTagged(obj.component) ?? "(unparseable)",
+    };
+  });
+}
+
+// ---- AMM math ----
+
+function quoteSwap(amountIn, reserveIn, reserveOut) {
+  if (amountIn <= 0n || reserveIn <= 0n || reserveOut <= 0n) return 0n;
+  const amountInWithFee = amountIn * FEE_NUM;
+  const numerator = amountInWithFee * reserveOut;
+  const denominator = reserveIn * FEE_DEN + amountInWithFee;
+  return numerator / denominator;
+}
+
+function parseDecimalToMicro(s) {
+  if (s === null || s === undefined || s === "") return 0n;
+  const num = Number(s);
+  if (!Number.isFinite(num) || num < 0) return 0n;
+  return BigInt(Math.round(num * 1_000_000));
+}
+
+function formatMicroAsDecimal(micro) {
+  if (typeof micro !== "bigint") micro = BigInt(micro || 0);
+  if (micro === 0n) return "0";
+  const whole = micro / MICRO;
+  const frac = micro % MICRO;
+  const fracStr = frac.toString().padStart(6, "0").replace(/0+$/, "");
+  return fracStr ? `${whole}.${fracStr}` : `${whole}`;
+}
+
+// Identify which reserve corresponds to SOON / tTARI by resource address.
+function classifyReserves(state) {
+  // resourceA/B are whatever the on-chain pool stored as vault_a / vault_b.
+  // We tag them by which one matches our known TARI_TOKEN address.
+  let reserveSoonMicro, reserveTariMicro;
+  if (state.resourceA === ADDRS.TARI_TOKEN) {
+    reserveTariMicro = state.reserveA;
+    reserveSoonMicro = state.reserveB;
+  } else {
+    reserveSoonMicro = state.reserveA;
+    reserveTariMicro = state.reserveB;
+  }
+  return { reserveSoonMicro, reserveTariMicro };
+}
+
+// ---- Render ----
+
 function renderAddresses() {
   const container = $("#addresses");
   const rows = [
-    ["POOL_COMPONENT",   ADDRS.POOL_COMPONENT,   "the AMM"],
-    ["FACTORY_COMPONENT",ADDRS.FACTORY_COMPONENT,"registry"],
-    ["SOON_COMPONENT",   ADDRS.SOON_COMPONENT,   "$SOON token + faucet"],
-    ["SOON_RESOURCE",    ADDRS.SOON_RESOURCE,    ""],
-    ["LP_RESOURCE",      ADDRS.LP_RESOURCE,      ""],
-    ["POOL_TEMPLATE",    ADDRS.POOL_TEMPLATE,    ""],
-    ["FACTORY_TEMPLATE", ADDRS.FACTORY_TEMPLATE, ""],
-    ["SOON_TEMPLATE",    ADDRS.SOON_TEMPLATE,    ""],
+    ["POOL_COMPONENT",    ADDRS.POOL_COMPONENT],
+    ["FACTORY_COMPONENT", ADDRS.FACTORY_COMPONENT],
+    ["SOON_COMPONENT",    ADDRS.SOON_COMPONENT],
+    ["SOON_RESOURCE",     ADDRS.SOON_RESOURCE],
+    ["LP_RESOURCE",       ADDRS.LP_RESOURCE],
+    ["POOL_TEMPLATE",     ADDRS.POOL_TEMPLATE],
+    ["FACTORY_TEMPLATE",  ADDRS.FACTORY_TEMPLATE],
+    ["SOON_TEMPLATE",     ADDRS.SOON_TEMPLATE],
   ];
   container.innerHTML = "";
-  for (const [label, value, _hint] of rows) {
+  for (const [label, value] of rows) {
     const row = document.createElement("div");
     row.className = "addr-row";
     row.innerHTML = `
@@ -59,107 +223,98 @@ function renderAddresses() {
   }
 }
 
-// ---- Constant-product swap math (BigInt to match on-chain exactly) ----
-// amount_out = floor((amount_in * 997 * reserve_out) / (reserve_in * 1000 + amount_in * 997))
-function quoteSwap(amountIn, reserveIn, reserveOut) {
-  if (amountIn <= 0n || reserveIn <= 0n || reserveOut <= 0n) return 0n;
-  const amountInWithFee = amountIn * FEE_NUM;
-  const numerator = amountInWithFee * reserveOut;
-  const denominator = reserveIn * FEE_DEN + amountInWithFee;
-  return numerator / denominator;
-}
+let currentReserves = null; // { reserveSoonMicro, reserveTariMicro, lpTotalSupply }
 
-// Convert a decimal user input (e.g. "1.5") to micro-units BigInt.
-function parseDecimalToMicro(s) {
-  if (s === null || s === undefined || s === "") return 0n;
-  const num = Number(s);
-  if (!Number.isFinite(num) || num < 0) return 0n;
-  // Round to 6 decimals to match divisibility.
-  return BigInt(Math.round(num * 1_000_000));
-}
-
-function formatMicroAsDecimal(micro) {
-  if (typeof micro !== "bigint") micro = BigInt(micro || 0);
-  if (micro === 0n) return "0";
-  const whole = micro / MICRO;
-  const frac = micro % MICRO;
-  const fracStr = frac.toString().padStart(6, "0").replace(/0+$/, "");
-  return fracStr ? `${whole}.${fracStr}` : `${whole}`;
-}
-
-// ---- Live reserves fetch (best-effort) ----
-async function tryFetchLiveReserves() {
+async function refreshLive() {
   const status = $("#fetch-status");
-  status.textContent = "fetching…";
-  // We attempt the indexer's substate-get JSON-RPC. CORS may block;
-  // we fail gracefully and ask the user to enter manually.
+  status.textContent = "fetching live state…";
+  status.style.color = "var(--muted)";
   try {
-    const body = {
-      jsonrpc: "2.0",
-      id: 1,
-      method: "get_substate",
-      params: { address: ADDRS.POOL_COMPONENT },
+    const [poolState, registry] = await Promise.all([
+      readPoolState(),
+      readRegistry(),
+    ]);
+    const { reserveSoonMicro, reserveTariMicro } = classifyReserves(poolState);
+    currentReserves = {
+      reserveSoonMicro,
+      reserveTariMicro,
+      lpTotalSupply: poolState.lpTotalSupply,
     };
-    const res = await fetch(INDEXER_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    // The shape of the response is engine-specific; we'd need to walk into
-    // substate.component.body.state to find vault references and their
-    // balances. Without specifying that here, we surface the response and
-    // let the user check their wallet.
-    console.log("indexer response:", data);
-    status.textContent = "fetch succeeded — see browser console for raw response";
+
+    $("#reserve-soon").value = formatMicroAsDecimal(reserveSoonMicro);
+    $("#reserve-tari").value = formatMicroAsDecimal(reserveTariMicro);
+
+    $("#lp-supply").textContent = `${formatMicroAsDecimal(poolState.lpTotalSupply)} LP`;
+    $("#pool-count").textContent = `${registry.length}`;
+
+    renderRegistry(registry);
+
+    const now = new Date();
+    status.textContent = `live · refreshed ${now.toLocaleTimeString()}`;
     status.style.color = "var(--success)";
+
+    recompute();
   } catch (e) {
-    console.warn("Live fetch failed (likely CORS):", e);
-    status.textContent = "live fetch blocked (CORS) — enter values manually";
+    console.error("live fetch failed:", e);
+    status.textContent = `live fetch failed: ${e.message}. Enter values manually.`;
     status.style.color = "var(--error)";
   }
 }
 
-// ---- Rendering / interactivity ----
+function renderRegistry(entries) {
+  const container = $("#registry");
+  if (!container) return;
+  if (entries.length === 0) {
+    container.innerHTML = `<p class="muted">No pools registered yet.</p>`;
+    return;
+  }
+  container.innerHTML = entries.map((e, i) => `
+    <div class="addr-row" data-component="${e.component}">
+      <span class="label">#${i}</span>
+      <span class="value">
+        ${shortenAddr(e.resource_a)} ⇄ ${shortenAddr(e.resource_b)}
+        <br><span class="muted">${e.component}</span>
+      </span>
+    </div>
+  `).join("");
+}
+
+function shortenAddr(addr) {
+  if (!addr) return "(?)";
+  // resource_010101...01 is the native TARI; show it as TARI for readability.
+  if (addr === ADDRS.TARI_TOKEN) return "tTARI";
+  if (addr === ADDRS.SOON_RESOURCE) return "SOON";
+  return addr.slice(0, 14) + "…" + addr.slice(-6);
+}
+
 function recompute() {
   const reserveSoonMicro = parseDecimalToMicro($("#reserve-soon").value);
   const reserveTariMicro = parseDecimalToMicro($("#reserve-tari").value);
   const amountInDec = $("#amount-in").value;
   const amountInMicro = parseDecimalToMicro(amountInDec);
-  const side = $("#side").value; // "tari" or "soon"
+  const side = $("#side").value;
 
-  // Spot price (no fee, no slippage): SOON per tTARI
   if (reserveSoonMicro > 0n && reserveTariMicro > 0n) {
-    // 1 tTARI buys (reserve_soon / reserve_tari) SOON in the limit
-    // Round to 4 decimal places for display.
     const ratio = Number(reserveSoonMicro) / Number(reserveTariMicro);
     $("#price-display").textContent = `1 tTARI ≈ ${ratio.toFixed(4)} SOON`;
   } else {
     $("#price-display").textContent = "—";
   }
 
-  // Update output token label
   const outToken = side === "tari" ? "SOON" : "tTARI";
   $("#out-token").textContent = outToken;
 
-  // Compute swap output
   let amountOutMicro = 0n;
   let priceImpact = null;
   if (reserveSoonMicro > 0n && reserveTariMicro > 0n && amountInMicro > 0n) {
     const reserveIn  = side === "tari" ? reserveTariMicro : reserveSoonMicro;
     const reserveOut = side === "tari" ? reserveSoonMicro : reserveTariMicro;
     amountOutMicro = quoteSwap(amountInMicro, reserveIn, reserveOut);
-
-    // Price impact: how far from the spot price the user is getting?
-    // spot_out = amount_in * reserve_out / reserve_in   (no fee, no slippage)
-    // actual_out = amountOutMicro
-    // impact = (spot_out - actual_out) / spot_out
     const spotOut = (amountInMicro * reserveOut) / reserveIn;
     if (spotOut > 0n) {
-      const numerator = Number(spotOut - amountOutMicro);
-      const denominator = Number(spotOut);
-      priceImpact = (numerator / denominator) * 100;
+      const num = Number(spotOut - amountOutMicro);
+      const den = Number(spotOut);
+      priceImpact = (num / den) * 100;
     }
   }
 
@@ -170,8 +325,6 @@ function recompute() {
     ? "—"
     : `${priceImpact.toFixed(2)}%`;
 
-  // Build manifest
-  const inResource = side === "tari" ? "TARI" : `var!["soon_resource"]`;
   const usesSoon = side === "soon";
   const amountMicroLiteral = amountInMicro.toString();
 
@@ -199,48 +352,55 @@ function recompute() {
 
   $("#manifest").textContent = manifest;
 
-  // Update globals table
   $("#global-pool").querySelector("td:nth-child(2) code").textContent =
     ADDRS.POOL_COMPONENT;
 
   const soonRow = $("#global-soon");
   if (usesSoon) {
     soonRow.hidden = false;
-    soonRow.querySelector("td:nth-child(2) code").textContent =
-      ADDRS.SOON_RESOURCE;
+    soonRow.querySelector("td:nth-child(2) code").textContent = ADDRS.SOON_RESOURCE;
   } else {
     soonRow.hidden = true;
   }
 }
 
 // ---- Wire up ----
+
+// Generic helper for "copy contents of #sourceId, flash the button".
+function bindCopyButton(buttonId, sourceId) {
+  const btn = $(buttonId);
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    const text = $(sourceId).textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const original = btn.textContent;
+      btn.classList.add("copied");
+      btn.textContent = "Copied ✓";
+      setTimeout(() => {
+        btn.classList.remove("copied");
+        btn.textContent = original;
+      }, 1200);
+    });
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   renderAddresses();
 
-  // Pre-fill with the post-bootstrap reserves so calc starts useful.
-  // (Will be off after subsequent swaps; user can refresh manually.)
-  $("#reserve-soon").value = "100";
-  $("#reserve-tari").value = "10";
+  // Fill in the SOON component address in the faucet card's globals table.
+  const faucetSoonComp = $("#faucet-soon-comp");
+  if (faucetSoonComp) faucetSoonComp.textContent = ADDRS.SOON_COMPONENT;
 
   ["#reserve-soon", "#reserve-tari", "#amount-in", "#side"].forEach((sel) => {
     $(sel).addEventListener("input", recompute);
     $(sel).addEventListener("change", recompute);
   });
 
-  $("#fetch-reserves").addEventListener("click", tryFetchLiveReserves);
+  $("#fetch-reserves").addEventListener("click", refreshLive);
 
-  $("#copy-manifest").addEventListener("click", () => {
-    const text = $("#manifest").textContent;
-    navigator.clipboard.writeText(text).then(() => {
-      const btn = $("#copy-manifest");
-      btn.classList.add("copied");
-      btn.textContent = "Copied ✓";
-      setTimeout(() => {
-        btn.classList.remove("copied");
-        btn.textContent = "Copy";
-      }, 1200);
-    });
-  });
+  bindCopyButton("#copy-manifest", "#manifest");
+  bindCopyButton("#copy-faucet", "#faucet-manifest");
 
-  recompute();
+  // Auto-fetch on load so the page comes up live.
+  refreshLive();
 });

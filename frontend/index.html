@@ -20,38 +20,112 @@
   </header>
 
   <main>
+    <!-- How to use -->
+    <section class="card howto">
+      <h2>How to use this DEX</h2>
+      <ol>
+        <li>
+          <strong>Run a Tari wallet daemon.</strong>
+          Grab <code>tari_ootle_walletd</code> v0.30+ from the
+          <a href="https://github.com/tari-project/tari-ootle/releases" target="_blank" rel="noreferrer">tari-ootle releases page</a>.
+          Linux/macOS prebuilts work directly; Windows users run via WSL2.
+          Wallet UI lives at <code>http://127.0.0.1:5100</code>.
+        </li>
+        <li>
+          <strong>Faucet some tTARI.</strong>
+          Create an account in the wallet UI, click the faucet — you get 1000 tTARI.
+        </li>
+        <li>
+          <strong>Find your account's component address.</strong>
+          On your account detail page, copy the field starting with
+          <code>component_</code> (64 hex chars). This is your
+          <code>account</code> global — NOT the <code>otl_esm_...</code> form.
+        </li>
+        <li>
+          <strong>Optional: claim free $SOON</strong> from the SoonToken faucet — use the manifest below.
+          No tTARI required. Lets you also test selling SOON for tTARI.
+        </li>
+        <li>
+          <strong>Use the swap calculator</strong> further down. Type an amount, copy the generated manifest,
+          paste it into your wallet's <strong>Manifest</strong> tab with the listed globals,
+          set fee to <code>50000</code>, and submit.
+        </li>
+      </ol>
+    </section>
+
+    <!-- Free SOON faucet -->
+    <section class="card">
+      <h2>Get free $SOON to test with</h2>
+      <p class="muted">
+        The SoonToken component has a public faucet that drips 100 SOON per call.
+        Useful if you want to test the SOON → tTARI direction without buying SOON first.
+      </p>
+      <h3>Globals</h3>
+      <table class="globals">
+        <thead><tr><th>Key</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td><code>account</code></td><td><code><em>your account component address</em></code></td></tr>
+          <tr><td><code>soon</code></td><td><code id="faucet-soon-comp"></code></td></tr>
+        </tbody>
+      </table>
+      <h3>Manifest</h3>
+      <div class="manifest-wrap">
+        <pre id="faucet-manifest">fn main() {
+    let mut account = var!["account"];
+    let soon = var!["soon"];
+
+    let bucket = soon.faucet();
+    account.deposit(bucket);
+}</pre>
+        <button id="copy-faucet" type="button">Copy</button>
+      </div>
+    </section>
+
     <!-- Live deployment addresses -->
     <section class="card">
-      <h2>Live deployment</h2>
-      <p class="muted">Esmeralda testnet · pool bootstrapped 100 SOON + 10 tTARI · click to copy</p>
+      <h2>Live deployment addresses</h2>
+      <p class="muted">Esmeralda testnet · pool bootstrapped 100 SOON + 10 tTARI · click any row to copy</p>
       <div id="addresses" class="addresses"></div>
     </section>
 
-    <!-- Pool state -->
+    <!-- Pool state (LIVE) -->
     <section class="card">
-      <h2>Pool reserves</h2>
+      <h2>Pool state — live</h2>
       <p class="muted">
-        We try to fetch live reserves from the public indexer. If CORS blocks the
-        browser request, enter the values manually below — you can pull them with
-        any wallet's <code>get_reserves</code> call against
-        <code>POOL_COMPONENT</code>.
+        Fetched directly from the public Esmeralda indexer. Values can be edited
+        manually if you want to simulate a hypothetical state.
       </p>
       <div class="reserves">
         <label>
-          <span>Reserve A — $SOON</span>
-          <input id="reserve-soon" type="number" min="0" step="any" placeholder="micro-SOON (10^6 = 1 SOON)" />
+          <span>Reserve — $SOON</span>
+          <input id="reserve-soon" type="number" min="0" step="any" placeholder="loading…" />
         </label>
         <label>
-          <span>Reserve B — tTARI</span>
-          <input id="reserve-tari" type="number" min="0" step="any" placeholder="micro-tTARI (10^6 = 1 tTARI)" />
+          <span>Reserve — tTARI</span>
+          <input id="reserve-tari" type="number" min="0" step="any" placeholder="loading…" />
         </label>
-        <button id="fetch-reserves" type="button">↻ Try fetch live</button>
+        <button id="fetch-reserves" type="button">↻ Refresh live</button>
         <span id="fetch-status" class="muted"></span>
       </div>
       <div class="ratio">
         <span>Spot price:</span>
         <strong id="price-display">—</strong>
       </div>
+      <div class="ratio">
+        <span>Total LP supply:</span>
+        <strong id="lp-supply">—</strong>
+      </div>
+    </section>
+
+    <!-- Registered pools -->
+    <section class="card">
+      <h2>Factory registry</h2>
+      <p class="muted">
+        Pools registered with <code>FACTORY_COMPONENT</code>. Currently
+        <strong id="pool-count">—</strong> registered. Anyone can deploy more
+        pools and register them — see <a href="https://github.com/MrMooning/Soon-Swap/blob/main/DEPLOY.md" target="_blank" rel="noreferrer">DEPLOY.md</a>.
+      </p>
+      <div id="registry"><p class="muted">loading…</p></div>
     </section>
 
     <!-- Swap calculator -->

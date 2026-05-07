@@ -352,6 +352,47 @@ button:active {
   background: var(--success);
 }
 
+/* --- How to use --- */
+
+.howto {
+  border-left: 3px solid var(--accent);
+}
+
+.howto ol {
+  margin: 8px 0 0;
+  padding-left: 24px;
+  display: grid;
+  gap: 14px;
+}
+
+.howto li {
+  font-size: 13.5px;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+.howto strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.howto code {
+  background: var(--code-bg);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.howto a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.howto a:hover {
+  text-decoration: underline;
+}
+
 /* --- About --- */
 
 .about {

@@ -1,7 +1,20 @@
 # OotleSwap
 
+[![CI](https://github.com/MrMooning/Soon-Swap/actions/workflows/ci.yml/badge.svg)](https://github.com/MrMooning/Soon-Swap/actions/workflows/ci.yml)
+[![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3-blue.svg)](LICENSE)
+
 A constant-product (Uniswap V2 style) AMM for Tari Ootle, plus a $SOON test token.
-**Live on Esmeralda testnet** — this is (to our knowledge) the first DEX deployed on Tari.
+**Live on Esmeralda testnet** — to our knowledge, the first DEX on Tari.
+
+## ⚡ Try it now
+
+🌐 **Web app:** **<https://mrmooning.github.io/Soon-Swap/>** — live pool reserves, swap calculator, copy-paste manifests for your wallet
+
+🔧 **CLI demo:** `cd cli && cargo run --release` — generates a fresh wallet, faucets tTARI, executes a swap end-to-end (~30 seconds against the live testnet)
+
+📖 **Step-by-step swap guide:** see [DEPLOY.md](./DEPLOY.md) for the full publish/swap runbook, or just go to the web app and follow the on-page instructions
+
+---
 
 ## Live deployment (Esmeralda)
 
