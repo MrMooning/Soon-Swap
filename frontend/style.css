@@ -1,0 +1,405 @@
+:root {
+  --bg: #0f1419;
+  --card: #1a2028;
+  --card-hover: #232a35;
+  --border: #2a3340;
+  --text: #e8eef5;
+  --muted: #8b97a5;
+  --accent: #ff7a45;
+  --accent-dim: #c25932;
+  --success: #4ade80;
+  --error: #f87171;
+  --code-bg: #0a0d12;
+  --radius: 10px;
+  --gap: 16px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+body {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+}
+
+/* --- Header --- */
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0 28px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.logo {
+  font-size: 28px;
+  color: var(--accent);
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+nav {
+  display: flex;
+  gap: 16px;
+}
+
+nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.15s;
+}
+
+nav a:hover {
+  color: var(--accent);
+}
+
+/* --- Card --- */
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: var(--gap);
+}
+
+.card h2 {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.card h3 {
+  margin: 18px 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 4px 0 16px;
+}
+
+/* --- Addresses --- */
+
+.addresses {
+  display: grid;
+  gap: 6px;
+}
+
+.addr-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--code-bg);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.addr-row:hover {
+  background: var(--card-hover);
+}
+
+.addr-row .label {
+  font-weight: 600;
+  color: var(--accent);
+  min-width: 130px;
+  font-family: inherit;
+}
+
+.addr-row .value {
+  flex: 1;
+  word-break: break-all;
+  color: var(--text);
+}
+
+.addr-row .copy-icon {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.addr-row.copied .copy-icon {
+  color: var(--success);
+}
+
+/* --- Reserves & swap inputs --- */
+
+.reserves {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: end;
+}
+
+.reserves > button {
+  grid-column: 1 / -1;
+}
+
+.reserves label, .swap-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reserves label > span, .swap-form label > span {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+input, select, output {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 15px;
+  color: var(--text);
+  font-family: inherit;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+button {
+  background: var(--accent);
+  border: none;
+  color: var(--bg);
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+button:hover {
+  background: var(--accent-dim);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+.ratio, .impact {
+  margin-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--code-bg);
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.ratio strong, .impact strong {
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* --- Swap form --- */
+
+.swap-form {
+  display: grid;
+  gap: 12px;
+}
+
+.amount-input {
+  display: flex;
+  gap: 8px;
+}
+
+.amount-input input, .amount-input output {
+  flex: 1;
+}
+
+.amount-input select {
+  width: auto;
+  min-width: 100px;
+}
+
+.amount-input output {
+  display: flex;
+  align-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+}
+
+.static-token {
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  min-width: 100px;
+  justify-content: center;
+}
+
+.arrow {
+  text-align: center;
+  font-size: 18px;
+  color: var(--muted);
+  margin: 4px 0;
+}
+
+/* --- Globals table --- */
+
+.globals {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+.globals th, .globals td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.globals th {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.globals code {
+  background: transparent;
+  color: var(--text);
+}
+
+.globals em {
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* --- Manifest --- */
+
+.manifest-wrap {
+  position: relative;
+}
+
+.manifest-wrap pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+  margin: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  color: var(--text);
+  white-space: pre;
+  overflow-x: auto;
+}
+
+#copy-manifest {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+#copy-manifest.copied {
+  background: var(--success);
+}
+
+/* --- About --- */
+
+.about {
+  background: transparent;
+  border: 1px dashed var(--border);
+}
+
+.about p {
+  font-size: 13.5px;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+
+.about a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.about a:hover {
+  text-decoration: underline;
+}
+
+/* --- Footer --- */
+
+footer {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+footer a {
+  color: var(--muted);
+}
+
+/* --- Responsive --- */
+
+@media (max-width: 600px) {
+  .reserves {
+    grid-template-columns: 1fr;
+  }
+  .brand h1 {
+    font-size: 20px;
+  }
+  .subtitle {
+    display: none;
+  }
+}

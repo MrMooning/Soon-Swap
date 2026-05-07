@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OotleSwap — first DEX on Tari Esmeralda</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="logo">⇄</span>
+      <h1>OotleSwap</h1>
+      <span class="subtitle">first DEX on Tari Esmeralda</span>
+    </div>
+    <nav>
+      <a href="https://github.com/MrMooning/Soon-Swap" target="_blank" rel="noreferrer">GitHub</a>
+      <a href="https://github.com/MrMooning/Soon-Swap/blob/main/DEPLOY.md" target="_blank" rel="noreferrer">Deploy guide</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Live deployment addresses -->
+    <section class="card">
+      <h2>Live deployment</h2>
+      <p class="muted">Esmeralda testnet · pool bootstrapped 100 SOON + 10 tTARI · click to copy</p>
+      <div id="addresses" class="addresses"></div>
+    </section>
+
+    <!-- Pool state -->
+    <section class="card">
+      <h2>Pool reserves</h2>
+      <p class="muted">
+        We try to fetch live reserves from the public indexer. If CORS blocks the
+        browser request, enter the values manually below — you can pull them with
+        any wallet's <code>get_reserves</code> call against
+        <code>POOL_COMPONENT</code>.
+      </p>
+      <div class="reserves">
+        <label>
+          <span>Reserve A — $SOON</span>
+          <input id="reserve-soon" type="number" min="0" step="any" placeholder="micro-SOON (10^6 = 1 SOON)" />
+        </label>
+        <label>
+          <span>Reserve B — tTARI</span>
+          <input id="reserve-tari" type="number" min="0" step="any" placeholder="micro-tTARI (10^6 = 1 tTARI)" />
+        </label>
+        <button id="fetch-reserves" type="button">↻ Try fetch live</button>
+        <span id="fetch-status" class="muted"></span>
+      </div>
+      <div class="ratio">
+        <span>Spot price:</span>
+        <strong id="price-display">—</strong>
+      </div>
+    </section>
+
+    <!-- Swap calculator -->
+    <section class="card">
+      <h2>Swap calculator</h2>
+      <p class="muted">
+        Constant-product AMM with 0.3% fee. Output preview is exact —
+        the actual on-chain swap will produce the same number to within 1 micro-unit
+        (rounding only).
+      </p>
+
+      <div class="swap-form">
+        <label>
+          <span>You spend</span>
+          <div class="amount-input">
+            <input id="amount-in" type="number" min="0" step="any" placeholder="1.0" value="1.0" />
+            <select id="side">
+              <option value="tari">tTARI</option>
+              <option value="soon">SOON</option>
+            </select>
+          </div>
+        </label>
+        <div class="arrow">↓</div>
+        <label>
+          <span>You receive (preview)</span>
+          <div class="amount-input">
+            <output id="amount-out">—</output>
+            <span id="out-token" class="static-token">SOON</span>
+          </div>
+        </label>
+      </div>
+
+      <div class="impact">
+        <span>Price impact:</span>
+        <strong id="impact-display">—</strong>
+      </div>
+    </section>
+
+    <!-- Generated manifest -->
+    <section class="card">
+      <h2>Generated swap manifest</h2>
+      <p class="muted">
+        Paste this into your Tari wallet UI's <strong>Manifest</strong> editor.
+        Set the globals shown below first.
+      </p>
+
+      <h3>Globals</h3>
+      <table class="globals">
+        <thead><tr><th>Key</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td><code>account</code></td><td><code>component_<em>your account address</em></code></td></tr>
+          <tr id="global-pool"><td><code>pool</code></td><td><code></code></td></tr>
+          <tr id="global-soon" hidden><td><code>soon_resource</code></td><td><code></code></td></tr>
+        </tbody>
+      </table>
+
+      <h3>Manifest</h3>
+      <div class="manifest-wrap">
+        <pre id="manifest"></pre>
+        <button id="copy-manifest" type="button">Copy</button>
+      </div>
+    </section>
+
+    <!-- Why this exists -->
+    <section class="card about">
+      <h2>About</h2>
+      <p>
+        OotleSwap is a constant-product AMM (Uniswap V2 style) on the Tari Ootle
+        Layer 2 network. It pairs an on-chain SOON test token against native
+        tTARI (revealed sub-balance only — confidential commitments are
+        rejected at every entry point so reserves stay in sync).
+      </p>
+      <p>
+        A factory + permissionless registry indexes pools by canonical resource
+        pair. Anyone can deploy more pools and register them. Source, tests,
+        runbook, and CLI demo binary at
+        <a href="https://github.com/MrMooning/Soon-Swap" target="_blank" rel="noreferrer">github.com/MrMooning/Soon-Swap</a>.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    <span>BSD-3-Clause · built by MrMooning</span>
+    <span>Tag <a href="https://github.com/MrMooning/Soon-Swap/releases/tag/v0.2.0" target="_blank" rel="noreferrer">v0.2.0</a></span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

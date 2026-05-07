@@ -48,6 +48,7 @@ ootleswap/
 ├── soon_token/   # $SOON test token with public faucet
 ├── factory/      # Pool factory + permissionless registry (lookup by pair)
 ├── cli/          # CLI demo: fresh wallet → faucet → swap, end-to-end
+├── frontend/     # Static SPA — swap calculator + manifest generator
 ├── scripts/      # Wallet manifests for every operation
 ├── build.sh      # Builds all WASM artifacts
 └── DEPLOY.md     # Esmeralda testnet deploy runbook
