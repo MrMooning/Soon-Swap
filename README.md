@@ -5,17 +5,40 @@ A constant-product (Uniswap V2 style) AMM for Tari Ootle, plus a $SOON test toke
 
 ## Live deployment (Esmeralda)
 
+### Templates
+
 | Name | Address |
 |---|---|
 | `SOON_TEMPLATE` | `template_c57dd1a2529152fd20f9f75a62c15210db6ae101fb12c22882be138c3f625baa` |
 | `POOL_TEMPLATE` | `template_317286e75618ff23f9ab6af0174bb08292fb04d9412033623c962824fcfe3cfa` |
-| `SOON_COMPONENT` | `component_7c20414944194b905f9f63c73f479c80bf03627483276cf51f0f8a8c08a3b8fd` |
-| `SOON_RESOURCE` | `resource_7ca2d0f6b8b17000eb3b00d8d8c0e358c6ad097b9c4ba6b417823bcaead6062f` |
-| `POOL_COMPONENT` | `component_3ab560338b91343b1a6ec1ccb21e47b23b3743ee72475603a0b0d1f41c147e40` |
-| `LP_RESOURCE` | `resource_3aaa0b1a17c896861fab1c3dc05de0dfc0173ed844338e935114038abfdb8db9` |
+| `FACTORY_TEMPLATE` | `template_dc1be09374178bf80058808add496d4a1501772315fd37748c75d9822958cd75` |
 
-Initial pool reserves: 100 SOON + 10 tTARI. Built against `tari_template_lib = 0.26`,
-talks to walletd v0.30.x.
+### Components
+
+| Name | Address |
+|---|---|
+| `SOON_COMPONENT` | `component_7c20414944194b905f9f63c73f479c80bf03627483276cf51f0f8a8c08a3b8fd` |
+| `POOL_COMPONENT` | `component_3ab560338b91343b1a6ec1ccb21e47b23b3743ee72475603a0b0d1f41c147e40` |
+| `FACTORY_COMPONENT` | `component_13f0cd0752f8dc9ff3582efea511795da33e2480f2705568f2adb9614a74e222` |
+
+### Resources
+
+| Name | Address |
+|---|---|
+| `SOON_RESOURCE` | `resource_7ca2d0f6b8b17000eb3b00d8d8c0e358c6ad097b9c4ba6b417823bcaead6062f` |
+| `LP_RESOURCE` | `resource_3aaa0b1a17c896861fab1c3dc05de0dfc0173ed844338e935114038abfdb8db9` |
+| `TARI_TOKEN` | `resource_0101010101010101010101010101010101010101010101010101010101010101` (native) |
+
+The pool was bootstrapped with 100 SOON + 10 tTARI and is registered with the factory.
+Built against `tari_template_lib = 0.26`; talks to walletd v0.30.x.
+
+### Querying the registry
+
+```rust
+factory.get_pool(soon_resource, TARI)  // → Some(POOL_COMPONENT)
+factory.pool_count()                   // → 1
+factory.list_pools()                   // → all registered pools
+```
 
 ## Layout
 
