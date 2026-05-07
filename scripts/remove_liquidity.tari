@@ -1,0 +1,18 @@
+// Burn 5,000,000 LP tokens (~5 LP at d=6) and receive proportional shares of
+// both reserve tokens back. The pool returns Vec<Bucket>; we deposit each
+// indexed element ("withdrawn.0" and "withdrawn.1") into the account.
+//
+// Globals required: account, pool, lp_resource
+// (lp_resource is shown in the pool's get_lp_resource() output, e.g.
+//  resource_3aaa0b1a17c896861fab1c3dc05de0dfc0173ed844338e935114038abfdb8db9)
+
+fn main() {
+    let mut account = var!["account"];
+    let pool = var!["pool"];
+    let lp_resource = var!["lp_resource"];
+
+    let lp_in = account.withdraw(lp_resource, Amount(5000000));
+    let withdrawn = pool.remove_liquidity(lp_in);
+    account.deposit(withdrawn.0);
+    account.deposit(withdrawn.1);
+}

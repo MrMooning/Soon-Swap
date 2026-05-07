@@ -1,0 +1,21 @@
+// Bootstrap a fresh pool with 100 SOON + 10 tTARI.
+// Initial price: 1 SOON = 0.1 tTARI. Mints sqrt(100M * 10M) - 1000 ≈ 31.62M LP.
+//
+// Globals required: account, soon, pool
+
+use template_c57dd1a2529152fd20f9f75a62c15210db6ae101fb12c22882be138c3f625baa as SoonToken;
+
+fn main() {
+    let mut account = var!["account"];
+    let soon = var!["soon"];
+    let pool = var!["pool"];
+
+    // 100 SOON from the public faucet
+    let soon_bucket = soon.faucet();
+
+    // 10 tTARI withdrawn as REVEALED funds (the pool rejects confidential)
+    let tari_bucket = account.withdraw(TARI, Amount(10000000));
+
+    let lp_bucket = pool.add_liquidity(soon_bucket, tari_bucket);
+    account.deposit(lp_bucket);
+}

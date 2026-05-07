@@ -1,0 +1,12 @@
+// Read-only: pull current reserves and LP supply from the pool.
+// The return values land in the transaction receipt — no state change occurs.
+//
+// Globals required: pool
+
+fn main() {
+    let pool = var!["pool"];
+
+    pool.get_reserves();
+    pool.get_total_lp_supply();
+    pool.get_lp_resource();
+}

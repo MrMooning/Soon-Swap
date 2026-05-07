@@ -1,0 +1,23 @@
+// Proportional add-liquidity: deposit 50 SOON + 5 tTARI into an already-bootstrapped
+// pool that's running at the canonical 10:1 ratio. LP minted is the floor of
+// min(in_a * total_lp / reserve_a, in_b * total_lp / reserve_b).
+//
+// If your pool's price has moved, deposit in the *current* ratio — excess on the
+// higher side is implicitly contributed to reserves but does not earn you extra LP.
+//
+// Globals required: account, soon, pool
+
+fn main() {
+    let mut account = var!["account"];
+    let soon = var!["soon"];
+    let pool = var!["pool"];
+
+    // Note: faucet drips 100 SOON; we'd take half. For 50 SOON exact, you'd
+    // need to faucet then split. This example uses a single faucet drip and
+    // pairs against 10 tTARI for simplicity.
+    let soon_bucket = soon.faucet();
+    let tari_bucket = account.withdraw(TARI, Amount(10000000));
+
+    let lp_bucket = pool.add_liquidity(soon_bucket, tari_bucket);
+    account.deposit(lp_bucket);
+}

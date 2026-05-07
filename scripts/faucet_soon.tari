@@ -1,0 +1,11 @@
+// Get 100 SOON from the public faucet, no swap or LP needed.
+//
+// Globals required: account, soon
+
+fn main() {
+    let mut account = var!["account"];
+    let soon = var!["soon"];
+
+    let soon_bucket = soon.faucet();
+    account.deposit(soon_bucket);
+}

@@ -1,0 +1,14 @@
+// Swap 1 tTARI for $SOON.
+// At a 100:10 reserve ratio, expected output ≈ 9.066 SOON
+// (10:1 spot, minus AMM curve impact, minus 0.3% fee).
+//
+// Globals required: account, pool
+
+fn main() {
+    let mut account = var!["account"];
+    let pool = var!["pool"];
+
+    let tari_in = account.withdraw(TARI, Amount(1000000));
+    let soon_out = pool.swap(tari_in);
+    account.deposit(soon_out);
+}

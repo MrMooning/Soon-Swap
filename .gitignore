@@ -1,0 +1,14 @@
+# Build artifacts
+target/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+
+# WASM artifacts are products of the build, not source — but small enough to include.
+# Uncomment to exclude:
+# *.wasm

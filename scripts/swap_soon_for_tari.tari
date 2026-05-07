@@ -1,0 +1,18 @@
+// Swap 10 SOON for tTARI. Direction-agnostic — the pool dispatches by the
+// input bucket's resource address, so you just hand it any bucket of either
+// reserve token.
+//
+// Globals required: account, soon, pool, soon_resource
+// (soon_resource = the SOON resource address; e.g.
+//  resource_7ca2d0f6b8b17000eb3b00d8d8c0e358c6ad097b9c4ba6b417823bcaead6062f)
+
+fn main() {
+    let mut account = var!["account"];
+    let pool = var!["pool"];
+    let soon_resource = var!["soon_resource"];
+
+    // 10 SOON = 10_000_000 micro at divisibility 6
+    let soon_in = account.withdraw(soon_resource, Amount(10000000));
+    let tari_out = pool.swap(soon_in);
+    account.deposit(tari_out);
+}

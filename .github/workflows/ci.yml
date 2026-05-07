@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    name: build & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain (stable + wasm32 target)
+        run: |
+          rustup update stable
+          rustup default stable
+          rustup target add wasm32-unknown-unknown
+
+      - name: Cache cargo registries and build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            pool/target
+            soon_token/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Build pool template (WASM)
+        working-directory: pool
+        run: cargo build --target wasm32-unknown-unknown --release
+
+      - name: Build soon_token template (WASM)
+        working-directory: soon_token
+        run: cargo build --target wasm32-unknown-unknown --release
+
+      - name: Run pool integration tests
+        working-directory: pool
+        run: cargo test --release --test integration
+
+      - name: Run soon_token tests
+        working-directory: soon_token
+        run: cargo test --release
+
+      - name: Report WASM artifact sizes
+        run: |
+          ls -lh pool/target/wasm32-unknown-unknown/release/*.wasm
+          ls -lh soon_token/target/wasm32-unknown-unknown/release/*.wasm
