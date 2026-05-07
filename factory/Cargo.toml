@@ -1,0 +1,13 @@
+[package]
+name = "ootleswap_factory"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tari_template_lib = "0.26"
+
+[dev-dependencies]
+tari_template_test_tooling = "0.30"
+
+[lib]
+crate-type = ["cdylib", "lib"]

@@ -23,6 +23,8 @@ addresses if you've deployed your own pool / token.
 - [`remove_liquidity.tari`](./remove_liquidity.tari) — burn 5,000,000 LP, return shares of both reserves
 - [`faucet_soon.tari`](./faucet_soon.tari) — get 100 SOON without doing anything else
 - [`get_reserves.tari`](./get_reserves.tari) — read-only: show pool reserves
+- [`register_pool.tari`](./register_pool.tari) — register a pool with the factory
+- [`get_pool.tari`](./get_pool.tari) — read-only: factory lookup by resource pair
 
 ## Fee
 

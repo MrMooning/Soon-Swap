@@ -1,0 +1,16 @@
+// Register a pool with the OotleSwap factory + registry.
+// The factory verifies the pool component is genuinely from the configured
+// pool template, then indexes it by canonical (resource_a, resource_b) pair.
+//
+// After this, anyone can look up the pool by either resource order via:
+//   factory.get_pool(resource_a, resource_b)
+//
+// Globals required: factory, pool, soon_resource
+
+fn main() {
+    let factory = var!["factory"];
+    let pool = var!["pool"];
+    let soon_resource = var!["soon_resource"];
+
+    factory.register_pool(pool, soon_resource, TARI);
+}

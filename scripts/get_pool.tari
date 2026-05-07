@@ -1,0 +1,16 @@
+// Read-only lookup: ask the factory for the pool component address for a
+// given resource pair. Order doesn't matter — the factory canonicalizes.
+//
+// The result lands in the transaction receipt as the return value of get_pool;
+// it'll be Some(component_...) if a pool is registered for the pair, or None.
+//
+// Globals required: factory, soon_resource
+
+fn main() {
+    let factory = var!["factory"];
+    let soon_resource = var!["soon_resource"];
+
+    factory.get_pool(soon_resource, TARI);
+    factory.pool_count();
+    factory.list_pools();
+}

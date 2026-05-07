@@ -27,6 +27,7 @@ jobs:
             ~/.cargo/git
             pool/target
             soon_token/target
+            factory/target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
@@ -39,6 +40,10 @@ jobs:
         working-directory: soon_token
         run: cargo build --target wasm32-unknown-unknown --release
 
+      - name: Build factory template (WASM)
+        working-directory: factory
+        run: cargo build --target wasm32-unknown-unknown --release
+
       - name: Run pool integration tests
         working-directory: pool
         run: cargo test --release --test integration
@@ -47,7 +52,12 @@ jobs:
         working-directory: soon_token
         run: cargo test --release
 
+      - name: Run factory integration tests
+        working-directory: factory
+        run: cargo test --release --test integration
+
       - name: Report WASM artifact sizes
         run: |
           ls -lh pool/target/wasm32-unknown-unknown/release/*.wasm
           ls -lh soon_token/target/wasm32-unknown-unknown/release/*.wasm
+          ls -lh factory/target/wasm32-unknown-unknown/release/*.wasm

@@ -23,9 +23,10 @@ talks to walletd v0.30.x.
 ootleswap/
 ├── pool/         # Generic AMM pool template (one per token pair)
 ├── soon_token/   # $SOON test token with public faucet
+├── factory/      # Pool factory + permissionless registry (lookup by pair)
 ├── cli/          # CLI demo: fresh wallet → faucet → swap, end-to-end
 ├── scripts/      # Wallet manifests for every operation
-├── build.sh      # Builds both WASM artifacts
+├── build.sh      # Builds all WASM artifacts
 └── DEPLOY.md     # Esmeralda testnet deploy runbook
 ```
 

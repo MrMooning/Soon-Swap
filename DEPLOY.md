@@ -126,6 +126,56 @@ Read-only methods (free to call from any explorer/indexer):
 Every successful swap emits `OotleSwap.Pool.Swap` with `in_resource`, `amount_in`,
 and `amount_out` — useful for indexers / price feeds.
 
+## (Optional) 8. Publish + register the factory
+
+After bootstrapping at least one pool, you can also publish the **factory**
+template and register your pool(s) for permissionless lookup by other dapps.
+
+### Publish
+
+In the Web UI:
+
+1. Home → Publish Template
+2. Upload `factory/target/wasm32-unknown-unknown/release/ootleswap_factory.wasm`
+3. Estimate fee → Publish
+4. Note the factory template address → `FACTORY_TEMPLATE_ADDRESS`
+
+### Instantiate
+
+Manifest:
+
+```
+use template_<FACTORY_TEMPLATE_ADDRESS> as Factory;
+
+fn main() {
+    Factory::new(TemplateAddress("template_<POOL_TEMPLATE_ADDRESS>"));
+}
+```
+
+> If the parser doesn't accept the `TemplateAddress(...)` literal directly, pass
+> the template address as a global instead and use `var!["pool_template"]`.
+
+Submit. The new component address from the receipt is `FACTORY_COMPONENT`.
+
+### Register a pool
+
+Set globals: `factory` = `FACTORY_COMPONENT`, `pool` = `POOL_COMPONENT`. Submit
+[`scripts/register_pool.tari`](./scripts/register_pool.tari):
+
+```
+fn main() {
+    let factory = var!["factory"];
+    let pool = var!["pool"];
+    factory.register_pool(pool);
+}
+```
+
+### Look up a pool
+
+Read-only — submit [`scripts/get_pool.tari`](./scripts/get_pool.tari) with
+`factory` and `soon_resource` globals set. The return value of `get_pool`
+appears in the receipt.
+
 ## Known limitations of v0.1
 
 - One pool per (resource_a, resource_b) instance — no pool factory yet.
