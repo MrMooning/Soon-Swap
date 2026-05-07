@@ -7,7 +7,7 @@ edition = "2024"
 tari_template_lib = "0.26"
 
 [dev-dependencies]
-tari_template_test_tooling = "0.25"
+tari_template_test_tooling = "0.30"
 
 [lib]
 crate-type = ["cdylib", "lib"]
