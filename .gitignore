@@ -1,8 +1,6 @@
 # Build artifacts
 target/
 
-# CLI is work-in-progress, not yet pushed to git
-cli/
 
 # OS / editor cruft
 .DS_Store

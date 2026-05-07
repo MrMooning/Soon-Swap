@@ -23,9 +23,20 @@ talks to walletd v0.30.x.
 ootleswap/
 ├── pool/         # Generic AMM pool template (one per token pair)
 ├── soon_token/   # $SOON test token with public faucet
+├── cli/          # CLI demo: fresh wallet → faucet → swap, end-to-end
+├── scripts/      # Wallet manifests for every operation
 ├── build.sh      # Builds both WASM artifacts
 └── DEPLOY.md     # Esmeralda testnet deploy runbook
 ```
+
+## Try the live pool from your terminal
+
+```bash
+cd cli && cargo build --release
+./target/release/soonswap
+```
+
+This generates a fresh keypair, claims tTARI from the faucet, and executes a 1 tTARI → SOON swap on the live Esmeralda pool. Prints the swap event with input/output amounts.
 
 `pool/` and `soon_token/` are **independent** Cargo packages (not a workspace) —
 this is required so that `tari_template_test_tooling` can find each template's WASM
